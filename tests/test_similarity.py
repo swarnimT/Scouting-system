@@ -184,10 +184,33 @@ class TestEdgeCases:
         leagues = engine.get_leagues()
         assert len(leagues) > 0
 
+    def test_get_positions_non_empty(self, engine: SimilarityEngine) -> None:
+        positions = engine.get_positions()
+        assert len(positions) > 0
+        assert set(positions).issubset({"FW", "MF", "DF"})
+
+    def test_get_player_row_success(self, engine: SimilarityEngine) -> None:
+        p = engine.df.iloc[0]["player"]
+        row = engine.get_player_row(p)
+        assert row["player"] == p
+        assert "team" in row
+
+    def test_get_player_row_not_found(self, engine: SimilarityEngine) -> None:
+        with pytest.raises(ValueError, match="not found"):
+            engine.get_player_row("NonExistentPlayer_9999")
+
     def test_missing_parquet_raises(self, tmp_path: "Path") -> None:
         eng = SimilarityEngine(parquet_path=tmp_path / "nonexistent.parquet")
         with pytest.raises(FileNotFoundError):
             eng._load()
+
+    def test_load_engine_factory(self, dummy_df: pd.DataFrame, tmp_path: "Path") -> None:
+        from src.similarity import load_engine
+        parquet = tmp_path / "factory_test.parquet"
+        dummy_df.to_parquet(parquet, index=False)
+        eng = load_engine(parquet)
+        assert len(eng.df) == len(dummy_df)
+        assert eng.match_matrix is not None
 
 
 # ===========================================================================

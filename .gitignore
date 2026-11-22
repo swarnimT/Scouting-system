@@ -184,4 +184,5 @@ cython_debug/
 data/*.parquet
 data/raw/
 data/processed/
-models/temperory
+models/
+temperory
