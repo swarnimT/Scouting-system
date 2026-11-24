@@ -7,7 +7,7 @@
 **Next-Generation AI & Unsupervised Machine Learning Scouting System across Europe's Big 5 Leagues**
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.14-3776AB?logo=python&logoColor=white)](https://python.org)
-[![Streamlit App](https://img.shields.io/badge/Streamlit-1.40+-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://scoutix.streamlit.app/)
 [![Tests Passing](https://img.shields.io/badge/pytest-36%20passed-success?logo=pytest&logoColor=white)](tests/)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.4+-F7931E?logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
 [![Plotly](https://img.shields.io/badge/Plotly-5.20+-3F4F75?logo=plotly&logoColor=white)](https://plotly.com)
@@ -16,6 +16,14 @@
 *Analyse • Scout • Discover*
 
 </div>
+
+---
+
+## 🌐 Live Application
+
+Explore the live SCOUTIX scouting platform deployed on Streamlit Community Cloud:
+
+👉 **[scoutix.streamlit.app](https://scoutix.streamlit.app/)**
 
 ---
 
