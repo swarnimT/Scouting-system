@@ -37,9 +37,15 @@ RANDOM_STATE: int = 42
 N_INIT: int = 10
 TOP_N_FEATURES: int = 3
 
-# Fill in after reviewing the top features printed for each cluster, e.g.
-# {0: "Ball-Playing Centre-Back", 1: "Pressing Winger", ...}
-CLUSTER_LABELS: dict[int, str] = {}
+# Tactical archetype names mapped from centroid profiles
+CLUSTER_LABELS: dict[int, str] = {
+    0: "Central Defender / Interceptor",
+    1: "Attacking Fullback / Crosser",
+    2: "Playmaker / Inverted Winger",
+    3: "Ball-Winning Midfielder",
+    4: "Target Forward / Finisher",
+    5: "Direct Winger / Ball Carrier",
+}
 
 BASE_COLUMNS: list[str] = [
     "player_name",
@@ -128,13 +134,17 @@ def fit_pca(X: np.ndarray) -> tuple[PCA, np.ndarray]:
 
 
 def build_processed_frame(df: pd.DataFrame, labels: np.ndarray, coords: np.ndarray) -> pd.DataFrame:
-    """Attach cluster and PCA columns and select the output schema."""
+    """Attach cluster and PCA columns while preserving all metadata, bio, and metric columns."""
     out = df.reset_index(drop=True).copy()
     out["cluster_id"] = labels.astype(int)
+    out["cluster"] = labels.astype(int)
     out["cluster_label"] = [CLUSTER_LABELS.get(int(c), f"Cluster {int(c)}") for c in labels]
+    out["archetype"] = out["cluster_label"]
     out["pca_1"] = coords[:, 0]
     out["pca_2"] = coords[:, 1]
-    return out[OUTPUT_COLUMNS]
+    out["pca_x"] = coords[:, 0]
+    out["pca_y"] = coords[:, 1]
+    return out
 
 
 def run_clustering(
@@ -169,7 +179,10 @@ def run_clustering(
 
     PROCESSED_PATH.parent.mkdir(parents=True, exist_ok=True)
     out.to_parquet(PROCESSED_PATH, index=False)
-    logger.info("Saved %d processed players to %s", len(out), PROCESSED_PATH)
+
+    root_data_path = PROJECT_ROOT / "data" / "players_processed.parquet"
+    out.to_parquet(root_data_path, index=False)
+    logger.info("Saved %d processed players to %s and %s", len(out), PROCESSED_PATH, root_data_path)
     return out
 
 

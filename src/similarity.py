@@ -77,6 +77,17 @@ REQUIRED_META_COLS: list[str] = [
     "pca_y",
 ]
 
+# Optional bio and financial attributes from Transfermarkt
+OPTIONAL_BIO_COLS: list[str] = [
+    "market_value_in_eur",
+    "highest_market_value_in_eur",
+    "height_in_cm",
+    "foot",
+    "image_url",
+    "sub_position",
+    "url",
+]
+
 PROCESSED_PATH = Path(__file__).parent.parent / "data" / "players_processed.parquet"
 
 
@@ -255,7 +266,8 @@ class SimilarityEngine:
         result = result.sort_values("match_pct", ascending=False).head(top_n)
 
         # Return useful columns
-        output_cols = REQUIRED_META_COLS + ["match_pct"] + METRIC_COLS
+        extra_cols = [c for c in OPTIONAL_BIO_COLS if c in result.columns]
+        output_cols = REQUIRED_META_COLS + ["match_pct"] + extra_cols + METRIC_COLS
         return result[output_cols].reset_index(drop=True)
 
     # ------------------------------------------------------------------
