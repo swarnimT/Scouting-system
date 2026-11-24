@@ -96,6 +96,17 @@ def _match_badge(pct: float) -> str:
     return f'<span class="{css_class}">{pct:.1f}%</span>'
 
 
+def _format_market_value(val: float | None) -> str:
+    """Format Transfermarkt valuation in €M or €K."""
+    if pd.isna(val) or val is None or val <= 0:
+        return "N/A"
+    if val >= 1_000_000:
+        return f"€{val / 1_000_000:.1f}M"
+    if val >= 1_000:
+        return f"€{val / 1_000:.0f}K"
+    return f"€{int(val)}"
+
+
 # ---------------------------------------------------------------------------
 # Helper: human-readable metric label
 # ---------------------------------------------------------------------------
@@ -224,12 +235,31 @@ def _render_search_panel(engine: SimilarityEngine, filters: dict) -> tuple[str |
         return None, pd.DataFrame()
 
     with st.expander(f"📋 {selected_player} — profile", expanded=True):
-        c1, c2, c3, c4, c5 = st.columns(5)
-        c1.metric("Club", qrow["team"])
-        c2.metric("League", qrow["league"])
-        c3.metric("Position", qrow["position"])
-        c4.metric("Age", int(qrow["age"]))
-        c5.metric("Archetype", qrow.get("archetype", "—"))
+        col_img, col_metrics = st.columns([1, 5])
+        img_url = qrow.get("image_url")
+        with col_img:
+            if pd.notna(img_url) and str(img_url).startswith("http"):
+                st.image(str(img_url), width=105)
+            else:
+                st.markdown("<div style='font-size:3rem;text-align:center;'>👤</div>", unsafe_allow_html=True)
+
+        with col_metrics:
+            c1, c2, c3, c4, c5 = st.columns(5)
+            c1.metric("Club", qrow["team"])
+            c2.metric("League", qrow["league"])
+            c3.metric("Position", qrow["position"])
+            c4.metric("Age", int(qrow["age"]))
+            c5.metric("Market Value", _format_market_value(qrow.get("market_value_in_eur")))
+
+            extra_info = []
+            if pd.notna(qrow.get("foot")) and qrow.get("foot") != "Unknown":
+                extra_info.append(f"Foot: **{str(qrow['foot']).capitalize()}**")
+            if pd.notna(qrow.get("height_in_cm")):
+                extra_info.append(f"Height: **{int(qrow['height_in_cm'])} cm**")
+            if pd.notna(qrow.get("archetype")):
+                extra_info.append(f"Archetype: **{qrow['archetype']}**")
+            if extra_info:
+                st.markdown(" · ".join(extra_info))
 
     # --- Run similarity query (cached by st.cache_data) ---
     results = _run_query(
@@ -281,7 +311,7 @@ def _run_query(
 
 
 def _render_scorecards(results: pd.DataFrame) -> None:
-    """3-column grid of match-% cards."""
+    """3-column grid of match-% cards with player photos and valuations."""
     cols_per_row = 3
     rows = [
         results.iloc[i : i + cols_per_row]
@@ -291,13 +321,24 @@ def _render_scorecards(results: pd.DataFrame) -> None:
         cols = st.columns(cols_per_row)
         for col, (_, r) in zip(cols, row_df.iterrows()):
             badge = _match_badge(r["match_pct"])
+            mv_str = _format_market_value(r.get("market_value_in_eur"))
+            img_url = r.get("image_url")
+            img_tag = (
+                f'<img src="{img_url}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;float:right;margin-left:8px;border:1.5px solid #00e676;" />'
+                if pd.notna(img_url) and str(img_url).startswith("http")
+                else ""
+            )
             col.markdown(
                 f"""
                 <div class="match-card">
+                  {img_tag}
                   <b>{r['player']}</b><br>
                   <small>{r['team']} · {r['league']}</small><br>
                   <small>Age {int(r['age'])} · {r['position']} · {r.get('archetype','—')}</small><br>
-                  Match: {badge}
+                  <div style="margin-top:6px;display:flex;justify-content:space-between;align-items:center;">
+                    <span>Match: {badge}</span>
+                    <span style="color:#00b4d8;font-weight:600;font-size:0.95rem;">{mv_str}</span>
+                  </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -333,7 +374,12 @@ def _render_h2h_table(engine: SimilarityEngine, query_player: str, results: pd.D
     for name in all_names:
         try:
             row = engine.get_player_row(name)
-            entry = {"Player": name, "Team": row["team"], "Age": int(row["age"])}
+            entry = {
+                "Player": name,
+                "Team": row["team"],
+                "Age": int(row["age"]),
+                "Valuation": _format_market_value(row.get("market_value_in_eur")),
+            }
             for m in METRIC_COLS:
                 entry[METRIC_LABELS.get(m, m)] = round(float(row.get(m, 0)), 3)
             rows.append(entry)
@@ -355,7 +401,7 @@ def _render_h2h_table(engine: SimilarityEngine, query_player: str, results: pd.D
 
     metric_cols_display = [METRIC_LABELS.get(m, m) for m in METRIC_COLS]
     styled = (
-        comp_df[["Team", "Age"] + metric_cols_display]
+        comp_df[["Team", "Age", "Valuation"] + metric_cols_display]
         .style.apply(_highlight_query, axis=1)
         .format(precision=3, subset=metric_cols_display)
         .background_gradient(cmap="YlGn", subset=metric_cols_display, axis=0)
