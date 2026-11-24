@@ -28,6 +28,8 @@ import streamlit as st
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
+LOGO_PATH = ROOT / "assets" / "logo.png"
+
 from src.similarity import SimilarityEngine, load_engine, METRIC_COLS
 
 # ---------------------------------------------------------------------------
@@ -43,8 +45,8 @@ except ImportError:
 # Page config
 # ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="⚽ Football Scout AI",
-    page_icon="⚽",
+    page_title="SCOUTIX — Football Scout AI",
+    page_icon=str(LOGO_PATH) if LOGO_PATH.exists() else "⚽",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -120,10 +122,8 @@ METRIC_LABELS: dict[str, str] = {
 # ---------------------------------------------------------------------------
 
 def _render_sidebar(engine: SimilarityEngine) -> dict:
-    st.sidebar.image(
-        "https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/UEFA_logo.svg/120px-UEFA_logo.svg.png",
-        width=90,
-    )
+    if LOGO_PATH.exists():
+        st.sidebar.image(str(LOGO_PATH), use_container_width=True)
     st.sidebar.title("🔍 Scouting Filters")
 
     all_leagues = engine.get_leagues()
@@ -171,8 +171,8 @@ def _render_sidebar(engine: SimilarityEngine) -> dict:
 
     st.sidebar.markdown("---")
     st.sidebar.caption(
-        "Football Scout AI · Partner 2 module\n"
-        "Similarity Engine + Streamlit · 2025"
+        "SCOUTIX · Football Scout AI\n"
+        "Analyse • Scout • Discover"
     )
 
     return {
@@ -399,14 +399,28 @@ def _render_visuals(engine: SimilarityEngine, query_player: str, results: pd.Dat
 
 def main() -> None:
     # Hero header
-    st.markdown(
-        "## ⚽ Football Scout AI — Big 5 European Leagues",
-        unsafe_allow_html=False,
-    )
-    st.caption(
-        "Find tactically similar players across 2,000+ professionals · "
-        "Powered by Cosine Similarity + KMeans Clustering"
-    )
+    if LOGO_PATH.exists():
+        col_logo, col_title = st.columns([1, 4])
+        with col_logo:
+            st.image(str(LOGO_PATH), width=160)
+        with col_title:
+            st.markdown(
+                "## SCOUTIX — Football Scout AI",
+                unsafe_allow_html=False,
+            )
+            st.caption(
+                "Find tactically similar players across 2,000+ professionals · "
+                "Powered by Cosine Similarity + KMeans Clustering"
+            )
+    else:
+        st.markdown(
+            "## ⚽ SCOUTIX — Football Scout AI",
+            unsafe_allow_html=False,
+        )
+        st.caption(
+            "Find tactically similar players across 2,000+ professionals · "
+            "Powered by Cosine Similarity + KMeans Clustering"
+        )
     st.markdown("---")
 
     # Load engine (cached for session)
